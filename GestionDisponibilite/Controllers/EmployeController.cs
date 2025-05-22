@@ -1,7 +1,7 @@
 ﻿using GestionDisponibilite.DTOs;
 using GestionDisponibilite.Model;
 using GestionDisponibilite.Repository;
-using GestionDisponibilite.Role;
+using GestionDisponibilite.RoleUser;
 using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -10,6 +10,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GestionDisponibilite.Controllers
 {
+    /// <summary>
+    /// Contrôleur pour la gestion des employés.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class EmployeController : ControllerBase
@@ -23,7 +26,9 @@ namespace GestionDisponibilite.Controllers
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        /// Retrieve all employees.
+        /// <summary>
+        /// Récupère la liste de tous les employés.
+        /// </summary>
         [HttpGet]
         [Authorize(Roles = $"{Roles.Admin},{Roles.User}")]
         [ProducesResponseType(typeof(IEnumerable<EmployeDto>), StatusCodes.Status200OK)]
@@ -33,7 +38,10 @@ namespace GestionDisponibilite.Controllers
             return Ok(employes);
         }
 
-        /// Retrieve a specific employee by ID.
+        /// <summary>
+        /// Récupère un employé par son identifiant.
+        /// </summary>
+        /// <param name="id">Identifiant de l'employé</param>
         [HttpGet("{id:guid}", Name = nameof(GetById))]
         [Authorize(Roles = $"{Roles.Admin},{Roles.User}")]
         [ProducesResponseType(typeof(EmployeDto), StatusCodes.Status200OK)]
@@ -41,10 +49,19 @@ namespace GestionDisponibilite.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var employe = await _employeRepository.GetByIdAsync(id);
-            return employe is null ? NotFound($"Employé avec ID '{id}' introuvable.") : Ok(employe);
+            if (employe is null)
+            {
+                _logger.LogInformation("Aucun employé trouvé avec l'ID : {Id}", id);
+                return NotFound($"Aucun employé trouvé avec l'ID '{id}'.");
+            }
+
+            return Ok(employe);
         }
 
-        /// Create a new employee. Only accessible by Admins.
+        /// <summary>
+        /// Crée un nouvel employé (réservé aux administrateurs).
+        /// </summary>
+        /// <param name="dto">Données du nouvel employé</param>
         [HttpPost]
         [Authorize(Roles = Roles.Admin)]
         [ProducesResponseType(typeof(EmployeDto), StatusCodes.Status201Created)]
@@ -52,7 +69,11 @@ namespace GestionDisponibilite.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Create([FromBody] CreateEmployeDto dto)
         {
-            if (dto == null) return BadRequest("Données de création de l'employé manquantes.");
+            if (dto == null)
+            {
+                _logger.LogWarning("Données de création nulles.");
+                return BadRequest("Les données de création sont requises.");
+            }
 
             try
             {
@@ -61,17 +82,21 @@ namespace GestionDisponibilite.Controllers
             }
             catch (ArgumentException ex)
             {
-                _logger.LogWarning(ex, "Erreur lors de la création de l'employé.");
+                _logger.LogWarning(ex, "Erreur lors de la création : {Message}", ex.Message);
                 return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur interne lors de la création de l'employé.");
-                return StatusCode(StatusCodes.Status500InternalServerError, "Une erreur interne s'est produite.");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Erreur interne du serveur.");
             }
         }
 
-        /// Update an existing employee. Only accessible by Admins.
+        /// <summary>
+        /// Met à jour un employé existant (réservé aux administrateurs).
+        /// </summary>
+        /// <param name="id">ID de l'employé</param>
+        /// <param name="dto">Données mises à jour</param>
         [HttpPut("{id:guid}")]
         [Authorize(Roles = Roles.Admin)]
         [ProducesResponseType(typeof(EmployeDto), StatusCodes.Status200OK)]
@@ -80,38 +105,62 @@ namespace GestionDisponibilite.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEmployeDto dto)
         {
-            if (dto == null) return BadRequest("Données de mise à jour manquantes.");
+            if (dto == null)
+            {
+                _logger.LogWarning("Données de mise à jour nulles pour l'ID : {Id}", id);
+                return BadRequest("Les données de mise à jour sont requises.");
+            }
 
             try
             {
                 var updatedEmploye = await _employeRepository.UpdateAsync(id, dto);
-                return updatedEmploye is null
-                    ? NotFound($"Aucun employé trouvé avec l'ID '{id}'.")
-                    : Ok(updatedEmploye);
+                if (updatedEmploye is null)
+                {
+                    _logger.LogInformation("Aucun employé trouvé pour la mise à jour avec l'ID : {Id}", id);
+                    return NotFound($"Aucun employé trouvé avec l'ID '{id}'.");
+                }
+
+                return Ok(updatedEmploye);
             }
             catch (ArgumentException ex)
             {
-                _logger.LogWarning(ex, "Erreur lors de la mise à jour de l'employé.");
+                _logger.LogWarning(ex, "Conflit lors de la mise à jour : {Message}", ex.Message);
                 return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Erreur interne lors de la mise à jour de l'employé.");
-                return StatusCode(StatusCodes.Status500InternalServerError, "Une erreur interne s'est produite.");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Erreur interne du serveur.");
             }
         }
 
-        /// Delete an employee. Only accessible by Admins.
+        /// <summary>
+        /// Supprime un employé (réservé aux administrateurs).
+        /// </summary>
+        /// <param name="id">ID de l'employé</param>
         [HttpDelete("{id:guid}")]
         [Authorize(Roles = Roles.Admin)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var deleted = await _employeRepository.DeleteAsync(id);
-            return deleted
-                ? NoContent()
-                : NotFound($"Employé avec ID '{id}' non trouvé.");
+            try
+            {
+                var deleted = await _employeRepository.DeleteAsync(id);
+                if (!deleted)
+                {
+                    _logger.LogWarning("Suppression échouée : employé introuvable avec l'ID : {Id}", id);
+                    return NotFound($"Aucun employé trouvé avec l'ID '{id}'.");
+                }
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur interne lors de la suppression de l'employé.");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Erreur interne du serveur.");
+            }
         }
     }
 }

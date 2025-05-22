@@ -7,12 +7,36 @@ namespace GestionDisponibilite.Validator
     {
         public UpdateEmployeDtoValidator()
         {
-            RuleFor(x => x.Nom).NotEmpty();
-            RuleFor(x => x.Prenom).NotEmpty();
-            RuleFor(x => x.Email).NotEmpty().EmailAddress();
-            RuleFor(x => x.Telephone).Matches(@"^\+?[0-9\s\-]{7,15}$").When(x => !string.IsNullOrEmpty(x.Telephone));
-            RuleFor(x => x.Username).MaximumLength(100).When(x => !string.IsNullOrEmpty(x.Username));
-            RuleFor(x => x.Degree).MaximumLength(100).When(x => !string.IsNullOrEmpty(x.Degree));
+            RuleFor(x => x.Nom)
+                .Cascade(CascadeMode.Stop)
+                .NotEmpty().WithMessage("Le nom est obligatoire.")
+                .MaximumLength(100).WithMessage("Le nom ne doit pas dépasser 100 caractères.");
+
+            RuleFor(x => x.Prenom)
+                .Cascade(CascadeMode.Stop)
+                .NotEmpty().WithMessage("Le prénom est obligatoire.")
+                .MaximumLength(100).WithMessage("Le prénom ne doit pas dépasser 100 caractères.");
+
+            RuleFor(x => x.Email)
+                .Cascade(CascadeMode.Stop)
+                .NotEmpty().WithMessage("L'adresse e-mail est obligatoire.")
+                .EmailAddress().WithMessage("Format d'adresse e-mail invalide.")
+                .MaximumLength(255).WithMessage("L'adresse e-mail ne doit pas dépasser 255 caractères.");
+
+            RuleFor(x => x.Telephone)
+                .Cascade(CascadeMode.Stop)
+                .Matches(@"^\+?[0-9\s\-]{7,15}$").WithMessage("Le format du numéro de téléphone est invalide.")
+                .When(x => !string.IsNullOrWhiteSpace(x.Telephone));
+
+            RuleFor(x => x.Username)
+                .Cascade(CascadeMode.Stop)
+                .MaximumLength(100).WithMessage("Le nom d'utilisateur ne doit pas dépasser 100 caractères.")
+                .When(x => !string.IsNullOrWhiteSpace(x.Username));
+
+            RuleFor(x => x.Degree)
+                .Cascade(CascadeMode.Stop)
+                .MaximumLength(100).WithMessage("Le diplôme ne doit pas dépasser 100 caractères.")
+                .When(x => !string.IsNullOrWhiteSpace(x.Degree));
         }
     }
 }

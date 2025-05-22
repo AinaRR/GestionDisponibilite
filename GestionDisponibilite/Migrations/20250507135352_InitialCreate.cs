@@ -15,7 +15,7 @@ namespace GestionDisponibilite.Migrations
                 name: "Employes",
                 columns: table => new
                 {
-                    EmployeID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    EmployeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Username = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Role = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -30,7 +30,7 @@ namespace GestionDisponibilite.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Employes", x => x.EmployeID);
+                    table.PrimaryKey("PK_Employes", x => x.EmployeId);
                 });
 
             migrationBuilder.CreateTable(
@@ -64,7 +64,7 @@ namespace GestionDisponibilite.Migrations
                         name: "FK_EmployeProjets_Employes_EmployeId",
                         column: x => x.EmployeId,
                         principalTable: "Employes",
-                        principalColumn: "EmployeID",
+                        principalColumn: "EmployeId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_EmployeProjets_Projets_ProjetId",

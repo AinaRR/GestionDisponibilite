@@ -24,7 +24,7 @@ namespace GestionDisponibilite.Migrations
 
             modelBuilder.Entity("GestionDisponibilite.Model.Employe", b =>
                 {
-                    b.Property<Guid>("EmployeID")
+                    b.Property<Guid>("EmployeId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Adresse")
@@ -69,9 +69,41 @@ namespace GestionDisponibilite.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("EmployeID");
+                    b.HasKey("EmployeId");
 
                     b.ToTable("Employes");
+
+                    b.HasData(
+                        new
+                        {
+                            EmployeId = new Guid("5bcd15a0-78d7-4a7e-98c0-731d2bdcdc59"),
+                            Adresse = "",
+                            DateDeNaissance = new DateOnly(1, 1, 1),
+                            Degree = "",
+                            Email = "admin@example.com",
+                            Nom = "Admin",
+                            PasswordHash = "$argon2id$v=19$m=65536,t=3,p=1$da7YgjEXCLmxQ258xLuyHA$BVTvhrpu8jWJt4H5BYilCaqIPMwIAt4y2xn+44Z6urg",
+                            Prenom = "Root",
+                            Role = "Admin",
+                            SurProjet = false,
+                            Telephone = "",
+                            Username = "adminuser"
+                        },
+                        new
+                        {
+                            EmployeId = new Guid("4bae40a4-6316-454e-b02e-12683a1cebdd"),
+                            Adresse = "",
+                            DateDeNaissance = new DateOnly(1, 1, 1),
+                            Degree = "",
+                            Email = "user@example.com",
+                            Nom = "User",
+                            PasswordHash = "$argon2id$v=19$m=65536,t=3,p=1$J+EZTnIFqFnXOs0/HIaFSQ$+T8AE6mc1g4VE1ScQMHOWrw33/RUiIEaC86f/XKv1mw",
+                            Prenom = "Normal",
+                            Role = "User",
+                            SurProjet = false,
+                            Telephone = "",
+                            Username = "normaluser"
+                        });
                 });
 
             modelBuilder.Entity("GestionDisponibilite.Model.EmployeProjet", b =>
@@ -93,6 +125,33 @@ namespace GestionDisponibilite.Migrations
                     b.HasIndex("ProjetId");
 
                     b.ToTable("EmployeProjets");
+                });
+
+            modelBuilder.Entity("GestionDisponibilite.Model.EmployeRole", b =>
+                {
+                    b.Property<Guid>("EmployeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("EmployeId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("EmployeRoles");
+
+                    b.HasData(
+                        new
+                        {
+                            EmployeId = new Guid("5bcd15a0-78d7-4a7e-98c0-731d2bdcdc59"),
+                            RoleId = new Guid("53b4d5dd-ce00-4f79-86de-df5aa32a726f")
+                        },
+                        new
+                        {
+                            EmployeId = new Guid("4bae40a4-6316-454e-b02e-12683a1cebdd"),
+                            RoleId = new Guid("65d4adff-ec87-41bd-b521-9243d61ffbb3")
+                        });
                 });
 
             modelBuilder.Entity("GestionDisponibilite.Model.Projet", b =>
@@ -123,6 +182,33 @@ namespace GestionDisponibilite.Migrations
                     b.ToTable("Projets");
                 });
 
+            modelBuilder.Entity("GestionDisponibilite.Model.Role", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Roles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("53b4d5dd-ce00-4f79-86de-df5aa32a726f"),
+                            Name = "Admin"
+                        },
+                        new
+                        {
+                            Id = new Guid("65d4adff-ec87-41bd-b521-9243d61ffbb3"),
+                            Name = "User"
+                        });
+                });
+
             modelBuilder.Entity("GestionDisponibilite.Model.EmployeProjet", b =>
                 {
                     b.HasOne("GestionDisponibilite.Model.Employe", "Employe")
@@ -142,14 +228,40 @@ namespace GestionDisponibilite.Migrations
                     b.Navigation("Projet");
                 });
 
+            modelBuilder.Entity("GestionDisponibilite.Model.EmployeRole", b =>
+                {
+                    b.HasOne("GestionDisponibilite.Model.Employe", "Employe")
+                        .WithMany("EmployeRoles")
+                        .HasForeignKey("EmployeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GestionDisponibilite.Model.Role", "Role")
+                        .WithMany("EmployeRoles")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employe");
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("GestionDisponibilite.Model.Employe", b =>
                 {
                     b.Navigation("EmployeProjets");
+
+                    b.Navigation("EmployeRoles");
                 });
 
             modelBuilder.Entity("GestionDisponibilite.Model.Projet", b =>
                 {
                     b.Navigation("EmployeProjets");
+                });
+
+            modelBuilder.Entity("GestionDisponibilite.Model.Role", b =>
+                {
+                    b.Navigation("EmployeRoles");
                 });
 #pragma warning restore 612, 618
         }
