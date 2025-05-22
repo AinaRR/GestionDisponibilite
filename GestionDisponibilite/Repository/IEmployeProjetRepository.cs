@@ -1,5 +1,6 @@
 ﻿using GestionDisponibilite.DTOs;
 using GestionDisponibilite.Model;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace GestionDisponibilite.Repository
 {
@@ -13,5 +14,6 @@ namespace GestionDisponibilite.Repository
         Task<EmployeProjetDto> CreateAsync(CreateEmployeProjetDto dto);
         Task<EmployeProjet> CreateRawAsync(EmployeProjet entity);
         Task<bool> DeleteAsync(Guid id);
+        Task<IDbContextTransaction> BeginTransactionAsync();
     }
 }

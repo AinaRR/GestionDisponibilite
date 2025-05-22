@@ -3,6 +3,7 @@ using GestionDisponibilite.DTOs;
 using GestionDisponibilite.Model;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace GestionDisponibilite.Repository
 {
@@ -37,6 +38,12 @@ namespace GestionDisponibilite.Repository
 
         public async Task<EmployeProjetDto> CreateAsync(CreateEmployeProjetDto dto)
         {
+            var exists = await _context.EmployeProjets
+                .AnyAsync(ep => ep.EmployeId == dto.EmployeId && ep.ProjetId == dto.ProjetId);
+
+            if (exists)
+                throw new InvalidOperationException("This employee is already assigned to this project.");
+
             var entity = dto.Adapt<EmployeProjet>();
             _context.EmployeProjets.Add(entity);
             await _context.SaveChangesAsync();
@@ -64,6 +71,11 @@ namespace GestionDisponibilite.Repository
             _context.EmployeProjets.Add(entity);
             await _context.SaveChangesAsync();
             return entity;
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
         }
     }
 }

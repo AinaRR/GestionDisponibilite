@@ -3,67 +3,48 @@ using GestionDisponibilite.Model;
 using Mapster;
 
 namespace GestionDisponibilite.Mapping
-
 {
     public static class MapsterConfig
     {
         public static void RegisterMappings()
         {
             // ============================
-            // Employe Mappings
+            // Employe  ➜  EmployeDto
             // ============================
-
-            // Entity → DTO
             TypeAdapterConfig<Employe, EmployeDto>.NewConfig()
-                .Map(dest => dest.Id, src => src.EmployeID)
-                .Map(dest => dest.Nom, src => src.Nom)
-                .Map(dest => dest.Prenom, src => src.Prenom)
-                .Map(dest => dest.Email, src => src.Email)
-                .Map(dest => dest.NombreDeProjet, src => src.EmployeProjets.Count);
+                .Map(dest => dest.Id, src => src.EmployeId)
+                .Map(dest => dest.NombreDeProjet, src => src.EmployeProjets.Count)
+                .Map(dest => dest.Username, src => src.Username)   // ← ajouté
+                .Map(dest => dest.Role, src => src.Role)       // ← ajouté
+                .PreserveReference(true);
 
-            // CreateEmployeDto → Entity
+            // ============================
+            // CreateEmployeDto ➜ Employe
+            // ============================
             TypeAdapterConfig<CreateEmployeDto, Employe>.NewConfig()
-                .Map(dest => dest.EmployeID, _ => Guid.NewGuid())
-                .Map(dest => dest.Nom, src => src.Nom)
-                .Map(dest => dest.Prenom, src => src.Prenom)
-                .Map(dest => dest.Email, src => src.Email)
-                .Map(dest => dest.PasswordHash, _ => "") // should be set in service layer
-                .Map(dest => dest.Degree, src => src.Degree)
-                .Map(dest => dest.Username, src => src.Username)
+                .Map(dest => dest.EmployeId, _ => Guid.NewGuid())
+                .Ignore(dest => dest.PasswordHash)          // sera renseigné par le service
                 .Map(dest => dest.Role, src => src.Role ?? "User")
-                .Ignore(dest => dest.Adresse)
-                .Ignore(dest => dest.Telephone)
-                .Ignore(dest => dest.DateDeNaissance)
-                .Ignore(dest => dest.EmployeProjets);
+                .Ignore(dest => dest.EmployeProjets);       // évite la recopie vide
 
-            // RegisterEmployeDto → Entity
+            // ============================
+            // RegisterEmployeDto ➜ Employe
+            // ============================
             TypeAdapterConfig<RegisterEmployeDto, Employe>.NewConfig()
-                .Map(dest => dest.EmployeID, _ => Guid.NewGuid())
-                .Map(dest => dest.Nom, src => src.Nom)
-                .Map(dest => dest.Prenom, src => src.Prenom)
-                .Map(dest => dest.Email, src => src.Email)
-                .Map(dest => dest.PasswordHash, _ => "") // set in service
-                .Map(dest => dest.Telephone, src => src.Telephone)
-                .Map(dest => dest.DateDeNaissance, src => src.DateDeNaissance)
-                .Map(dest => dest.Adresse, src => src.Adresse)
-                .Ignore(dest => dest.Degree)
-                .Ignore(dest => dest.Username)
-                .Ignore(dest => dest.Role)
+                .Map(dest => dest.EmployeId, _ => Guid.NewGuid())
+                .Ignore(dest => dest.PasswordHash)
+                .Map(dest => dest.Role, src => src.Role ?? "User")
                 .Ignore(dest => dest.EmployeProjets);
-
-            // UpdateEmployeDto → Entity
-            TypeAdapterConfig<UpdateEmployeDto, Employe>.NewConfig()
-                .Map(dest => dest.Nom, src => src.Nom)
-                .Map(dest => dest.Prenom, src => src.Prenom)
-                .Map(dest => dest.Adresse, src => src.Adresse)
-                .Map(dest => dest.Username, src => src.Username)
-                .Map(dest => dest.Degree, src => src.Degree)
-                .Map(dest => dest.Email, src => src.Email);
+            // Username vient directement du DTO (obligatoire), pas de génération automatique
 
             // ============================
-            // EmployeProjet Mappings
+            // UpdateEmployeDto ➜ Employe
             // ============================
+            TypeAdapterConfig<UpdateEmployeDto, Employe>.NewConfig();
 
+            // ============================
+            // EmployeProjet  ➜  Dto
+            // ============================
             TypeAdapterConfig<EmployeProjet, EmployeProjetDto>.NewConfig();
 
             TypeAdapterConfig<CreateEmployeProjetDto, EmployeProjet>.NewConfig()
@@ -77,9 +58,8 @@ namespace GestionDisponibilite.Mapping
                 .Map(dest => dest.DateFinProjet, src => src.Projet.FinProjet);
 
             // ============================
-            // Projet Mappings
+            // Projet  ➜  Dto
             // ============================
-
             TypeAdapterConfig<Projet, ProjetDto>.NewConfig();
 
             TypeAdapterConfig<CreateProjetDto, Projet>.NewConfig()

@@ -1,5 +1,6 @@
 ﻿using GestionDisponibilite.DTOs;
 using GestionDisponibilite.Model;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace GestionDisponibilite.Repository
 {
@@ -7,6 +8,8 @@ namespace GestionDisponibilite.Repository
     {
         Task<IEnumerable<EmployeDto>> GetAllAsync();
         Task<EmployeDto?> GetByIdAsync(Guid id);
+        Task<Employe?> GetByUsernameAsync(string username);
+        Task<Employe?> GetByEmailAsync(string email);
         Task<EmployeDto> CreateAsync(CreateEmployeDto dto);
         Task<EmployeDto?> UpdateAsync(Guid id, UpdateEmployeDto dto);
         Task<bool> DeleteAsync(Guid id);
@@ -14,5 +17,7 @@ namespace GestionDisponibilite.Repository
         Task<Employe?> GetEntityByIdAsync(Guid id);
         Task UpdateEntityAsync(Employe employe);
         Task<bool> ExistsByEmailAsync(string email);
+        Task AddAsync(Employe employe);
+        Task SaveChangesAsync();
     }
 }

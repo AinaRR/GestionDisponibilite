@@ -2,12 +2,12 @@
 {
     public class Person
     {
-        public string Nom { get; set; }
-        public string Prenom { get; set; }
-        public string Adresse { get; set; }
-        public string Telephone { get; set; }
-        public string Email { get; set; }
+        public string Nom { get; set; } = string.Empty;
+        public string Prenom { get; set; } = string.Empty;
+        public string Adresse { get; set; } = string.Empty;
+        public string Telephone { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
         public DateOnly DateDeNaissance { get; set; }
-        public string Degree { get; set; }
+        public string Degree { get; set; } = string.Empty;
     }
 }

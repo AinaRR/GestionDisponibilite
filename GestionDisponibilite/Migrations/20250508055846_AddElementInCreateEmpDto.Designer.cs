@@ -27,7 +27,7 @@ namespace GestionDisponibilite.Migrations
 
             modelBuilder.Entity("GestionDisponibilite.Model.Employe", b =>
                 {
-                    b.Property<Guid>("EmployeID")
+                    b.Property<Guid>("EmployeId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Adresse")
@@ -71,7 +71,7 @@ namespace GestionDisponibilite.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("EmployeID");
+                    b.HasKey("EmployeId");
 
                     b.ToTable("Employes");
                 });
