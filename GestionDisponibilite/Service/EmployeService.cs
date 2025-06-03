@@ -15,9 +15,6 @@ using System.Threading.Tasks;
 
 namespace GestionDisponibilite.Service
 {
-    /// <summary>
-    /// Service applicatif principal pour la gestion des employés.
-    /// </summary>
     public class EmployeService : IEmployeService
     {
         private readonly IEmployeRepository _employeRepository;
@@ -32,7 +29,8 @@ namespace GestionDisponibilite.Service
         private static readonly HashSet<string> AllowedRoles = new(StringComparer.OrdinalIgnoreCase)
         {
             Roles.Admin,
-            Roles.User
+            Roles.User,
+            Roles.SuperAdmin
         };
 
         public EmployeService(
@@ -45,21 +43,19 @@ namespace GestionDisponibilite.Service
             ILogger<EmployeService> logger,
             IHttpContextAccessor httpContextAccessor)
         {
-            _employeRepository = employeRepository ?? throw new ArgumentNullException(nameof(employeRepository));
-            _projetRepository = projetRepository ?? throw new ArgumentNullException(nameof(projetRepository));
-            _employeProjetRepository = employeProjetRepository ?? throw new ArgumentNullException(nameof(employeProjetRepository));
-            _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
-            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _employeRepository = employeRepository;
+            _projetRepository = projetRepository;
+            _employeProjetRepository = employeProjetRepository;
+            _passwordHasher = passwordHasher;
+            _mapper = mapper;
             _pwdPolicy = pwdPolicyOptions?.Value ?? throw new ArgumentNullException(nameof(pwdPolicyOptions));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+            _logger = logger;
+            _httpContextAccessor = httpContextAccessor;
         }
-
-        #region Public API
 
         public async Task<EmployeProjetDto> LinkEmployeToProjetAsync(Guid employeId, Guid projetId)
         {
-            var employe = await _employeRepository.GetEntityByIdAsync(employeId)
+            var employe = await _employeRepository.GetWithProjetsByIdAsync(employeId)
                 ?? throw new DomainException($"Aucun employé trouvé avec l'ID {employeId}.");
 
             var projet = await _projetRepository.GetEntityByIdAsync(projetId)
@@ -77,8 +73,12 @@ namespace GestionDisponibilite.Service
                     EmployeId = employeId,
                     ProjetId = projetId
                 };
+
                 var created = await _employeProjetRepository.CreateRawAsync(entity);
                 await tx.CommitAsync();
+
+                employe.EmployeProjets.Add(entity);
+
                 return created.Adapt<EmployeProjetDto>();
             }
             catch (Exception ex)
@@ -91,21 +91,64 @@ namespace GestionDisponibilite.Service
 
         public async Task<EmployeDto> CreateEmployeAsync(CreateEmployeDto dto)
         {
-            if (dto is null) throw new ArgumentNullException(nameof(dto));
             var role = ValidateOrDefaultRole(dto.Role);
-            var employe = dto.Adapt<Employe>();
+            var employe = _mapper.Map<Employe>(dto);
             return await CreateAndSaveEmployeAsync(employe, dto.Password, role);
         }
 
         public async Task<EmployeDto> RegisterAsync(RegisterEmployeDto dto, bool isAdmin = false)
         {
-            if (dto is null) throw new ArgumentNullException(nameof(dto));
             var role = isAdmin ? Roles.Admin : Roles.User;
-            var employe = dto.Adapt<Employe>();
+            var employe = _mapper.Map<Employe>(dto);
             return await CreateAndSaveEmployeAsync(employe, dto.Password, role);
         }
 
-        #endregion
+        public async Task<IEnumerable<EmployeDto>> GetAllAsync()
+        {
+            var employes = await _employeRepository.GetAllEntitiesAsync();
+            return _mapper.Map<IEnumerable<EmployeDto>>(employes);
+        }
+
+        public async Task<EmployeDto?> GetByIdAsync(Guid id)
+        {
+            var employe = await _employeRepository.GetWithProjetsByIdAsync(id);
+            return employe == null ? null : _mapper.Map<EmployeDto>(employe);
+        }
+
+        public async Task<IEnumerable<ProjetDto>> GetProjetsByEmployeIdAsync(Guid employeId)
+        {
+            var employe = await _employeRepository.GetWithProjetsByIdAsync(employeId);
+            if (employe == null)
+                throw new DomainException($"Aucun employé trouvé avec l'ID {employeId}.");
+
+            var projets = employe.EmployeProjets
+                .Where(ep => ep.Projet != null)
+                .Select(ep => ep.Projet)
+                .ToList();
+
+            return _mapper.Map<IEnumerable<ProjetDto>>(projets);
+        }
+        public async Task<EmployeDto?> UpdateEmployeAsync(Guid id, UpdateEmployeDto dto)
+        {
+            var entity = await _employeRepository.GetEntityByIdAsync(id);
+            if (entity == null) return null;
+
+            var newEmail = dto.Email?.Trim().ToLowerInvariant();
+            if (!string.Equals(entity.Email?.ToLowerInvariant(), newEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                await EnsureEmailIsUniqueAsync(newEmail);
+                entity.Email = newEmail;
+            }
+
+            _mapper.Map(dto, entity);
+            await _employeRepository.UpdateEntityAsync(entity);
+            return _mapper.Map<EmployeDto>(entity);
+        }
+
+        public async Task<bool> DeleteEmployeAsync(Guid id)
+        {
+            return await _employeRepository.DeleteAsync(id);
+        }
 
         #region Helpers
 
@@ -119,24 +162,38 @@ namespace GestionDisponibilite.Service
             await _employeRepository.AddAsync(employe);
             await _employeRepository.SaveChangesAsync();
 
-            return employe.Adapt<EmployeDto>();
+            return _mapper.Map<EmployeDto>(employe);
         }
 
         private string HashPasswordOrThrow(string? password)
         {
             if (string.IsNullOrWhiteSpace(password))
                 throw new DomainException("Le mot de passe est requis.");
+
             if (password.Length < _pwdPolicy.MinLength)
                 throw new DomainException($"Le mot de passe doit contenir au moins {_pwdPolicy.MinLength} caractères.");
+
             if (_pwdPolicy.RequireUppercase && !password.Any(char.IsUpper))
                 throw new DomainException("Le mot de passe doit contenir au moins une lettre majuscule.");
+
             if (_pwdPolicy.RequireLowercase && !password.Any(char.IsLower))
                 throw new DomainException("Le mot de passe doit contenir au moins une lettre minuscule.");
+
             if (_pwdPolicy.RequireDigit && !password.Any(char.IsDigit))
                 throw new DomainException("Le mot de passe doit contenir au moins un chiffre.");
+
             if (_pwdPolicy.RequireNonAlphanumeric && !password.Any(ch => !char.IsLetterOrDigit(ch)))
                 throw new DomainException("Le mot de passe doit contenir au moins un caractère spécial.");
+
             return _passwordHasher.HashPassword(password);
+        }
+
+        private async Task EnsureEmailIsUniqueAsync(string? email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                throw new DomainException("Email requis.");
+            if (await _employeRepository.ExistsByEmailAsync(email))
+                throw new DomainException("Un employé avec cet email existe déjà.");
         }
 
         private string ValidateOrDefaultRole(string? inputRole)
@@ -147,22 +204,12 @@ namespace GestionDisponibilite.Service
             return role;
         }
 
-        private async Task EnsureEmailIsUniqueAsync(string email)
-        {
-            if (await _employeRepository.ExistsByEmailAsync(email))
-                throw new DomainException("Un employé avec cet email existe déjà.");
-        }
-
-        /// <summary>
-        /// Récupère l'ID de l'utilisateur courant à partir des claims JWT.
-        /// </summary>
         private Guid GetCurrentUserId()
         {
-            var user = _httpContextAccessor.HttpContext?.User;
-            var userId = user?.FindFirstValue(ClaimTypes.NameIdentifier);
-            return Guid.TryParse(userId, out var guid)
-                ? guid
-                : throw new DomainException("Utilisateur non authentifié ou identifiant invalide.");
+            var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            return Guid.TryParse(userId, out var id)
+                ? id
+                : throw new DomainException("Utilisateur non authentifié.");
         }
 
         #endregion

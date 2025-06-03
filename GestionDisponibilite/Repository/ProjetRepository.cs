@@ -84,10 +84,13 @@ namespace GestionDisponibilite.Repository
             await _context.SaveChangesAsync();
             return true;
         }
-
         public async Task<Projet?> GetEntityByIdAsync(Guid id)
         {
             return await _context.Projets.FirstOrDefaultAsync(p => p.ProjetId == id);
+        }
+        public async Task<bool> ExistsByIdAsync(Guid id)
+        {
+            return await _context.Projets.AnyAsync(p => p.ProjetId == id);
         }
     }
 }

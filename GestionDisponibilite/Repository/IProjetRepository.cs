@@ -11,5 +11,6 @@ namespace GestionDisponibilite.Repository
         Task<ProjetDto?> Update(Guid id, UpdateProjetDto dto); // Updates a project
         Task<bool> Delete(Guid id); // Deletes a project
         Task<Projet?> GetEntityByIdAsync(Guid id);
+        Task<bool> ExistsByIdAsync(Guid id);
     }
 }

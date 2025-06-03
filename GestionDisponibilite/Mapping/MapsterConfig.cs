@@ -14,7 +14,6 @@ namespace GestionDisponibilite.Mapping
             TypeAdapterConfig<Employe, EmployeDto>.NewConfig()
                 .Map(dest => dest.Id, src => src.EmployeId)
                 .Map(dest => dest.NombreDeProjet, src => src.EmployeProjets.Count)
-              //.Map(dest => dest.Username, src => src.Username)
                 .Map(dest => dest.Role, src => src.Role)
                 .PreserveReference(true);
 
@@ -80,3 +79,4 @@ namespace GestionDisponibilite.Mapping
         }
     }
 }
+
