@@ -15,6 +15,9 @@ using System.Threading.Tasks;
 
 namespace GestionDisponibilite.Service
 {
+    /// <summary>
+    /// Service applicatif principal pour la gestion des employés.
+    /// </summary>
     public class EmployeService : IEmployeService
     {
         private readonly IEmployeRepository _employeRepository;
@@ -73,7 +76,6 @@ namespace GestionDisponibilite.Service
                     EmployeId = employeId,
                     ProjetId = projetId
                 };
-
                 var created = await _employeProjetRepository.CreateRawAsync(entity);
                 await tx.CommitAsync();
 

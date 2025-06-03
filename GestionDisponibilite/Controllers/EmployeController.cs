@@ -12,6 +12,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GestionDisponibilite.Controllers
 {
+    /// <summary>
+    /// Contrôleur pour la gestion des employés.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     [Produces("application/json")]

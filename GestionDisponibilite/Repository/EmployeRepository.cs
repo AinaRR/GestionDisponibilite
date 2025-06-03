@@ -88,6 +88,10 @@ namespace GestionDisponibilite.Repository
             await _context.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Supprime un employé par son ID.
+        /// </summary>
+        /// <returns>True si supprimé, false si non trouvé.</returns>
         public async Task<bool> DeleteAsync(Guid id)
         {
             var entity = await _context.Employes.FindAsync(id);
@@ -95,6 +99,7 @@ namespace GestionDisponibilite.Repository
 
             _context.Employes.Remove(entity);
             await _context.SaveChangesAsync();
+
             return true;
         }
 
