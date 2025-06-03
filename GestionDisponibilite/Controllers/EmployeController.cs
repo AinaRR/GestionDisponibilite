@@ -36,8 +36,8 @@ namespace GestionDisponibilite.Controllers
             return Ok(employes);
         }
 
-        [HttpGet("{id:guid}/id", Name = nameof(GetById))]
-        [Authorize(Roles = Roles.All)]
+        [HttpGet("{id:guid}", Name = nameof(GetById))]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.User}")]
         [ProducesResponseType(typeof(EmployeDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<EmployeDto>> GetById(Guid id)
@@ -122,6 +122,12 @@ namespace GestionDisponibilite.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<EmployeDto>> Create([FromBody] CreateEmployeDto dto)
         {
+            if (dto == null)
+            {
+                _logger.LogWarning("Données de création nulles.");
+                return BadRequest("Les données de création sont requises.");
+            }
+
             try
             {
                 var createdEmploye = await _employeService.CreateEmployeAsync(dto);
@@ -157,6 +163,12 @@ namespace GestionDisponibilite.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<EmployeDto>> Update(Guid id, [FromBody] UpdateEmployeDto dto)
         {
+            if (dto == null)
+            {
+                _logger.LogWarning("Données de mise à jour nulles pour l'ID : {Id}", id);
+                return BadRequest("Les données de mise à jour sont requises.");
+            }
+
             try
             {
                 var updatedEmploye = await _employeService.UpdateEmployeAsync(id, dto);
